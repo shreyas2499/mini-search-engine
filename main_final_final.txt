@@ -1,0 +1,320 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <map>
+
+const int MAX_TERM_LENGTH = 256;
+const int MAX_URL_LENGTH = 1024;
+
+// Data structure for a document entry
+struct Document {
+    std::string term;
+    int docID;
+};
+
+// Define a data structure for the posting list
+struct PostingList {
+    int termFrequency;
+    std::vector<std::pair<int, std::vector<int>>> documentIDs;
+};
+
+
+// Function to merge two sorted vectors
+std::vector<std::string> merge(const std::vector<std::string>& left, const std::vector<std::string>& right) {
+    std::vector<std::string> merged;
+    size_t leftIndex = 0;
+    size_t rightIndex = 0;
+
+    while (leftIndex < left.size() && rightIndex < right.size()) {
+        if (left[leftIndex] < right[rightIndex]) {
+            merged.push_back(left[leftIndex]);
+            leftIndex++;
+        } else {
+            merged.push_back(right[rightIndex]);
+            rightIndex++;
+        }
+    }
+
+    // Append remaining elements
+    while (leftIndex < left.size()) {
+        merged.push_back(left[leftIndex]);
+        leftIndex++;
+    }
+
+    while (rightIndex < right.size()) {
+        merged.push_back(right[rightIndex]);
+        rightIndex++;
+    }
+
+    return merged;
+}
+
+
+// Function to sort a vector of strings using merge sort
+std::vector<std::string> mergeSort(const std::vector<std::string>& words) {
+    if (words.size() <= 1) {
+        return words;
+    }
+
+    size_t middle = words.size() / 2;
+    std::vector<std::string> left(words.begin(), words.begin() + middle);
+    std::vector<std::string> right(words.begin() + middle, words.end());
+
+    left = mergeSort(left);
+    right = mergeSort(right);
+
+    return merge(left, right);
+}
+
+std::string joinWithSpaces(const std::vector<std::string>& elements) {
+    if (elements.empty()) {
+        return "";
+    }
+
+    std::string result = elements[0];
+    
+    for (size_t i = 1; i < elements.size(); ++i) {
+        result += " " + elements[i];
+    }
+
+    return result;
+}
+
+
+// Function to remove specified characters from the end of a string
+std::string removeCharactersFromBothEnds(const std::string& input) {
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"'};
+
+    std::string result = input;
+
+    // Remove characters from the beginning
+    size_t firstValidChar = result.find_first_not_of(charactersToRemove);
+    if (firstValidChar != std::string::npos) {
+        result = result.substr(firstValidChar);
+    } else {
+        // All characters from the beginning are to be removed
+        result.clear();
+    }
+
+
+    // Find the position of the last character that is not in charactersToRemove
+    size_t lastValidChar = result.find_last_not_of(charactersToRemove);
+    if (lastValidChar != std::string::npos) {
+        result.erase(lastValidChar + 1);
+    } else {
+        // All characters are to be removed
+        result.clear();
+    }
+
+    // Debugging: Print the input and the result
+    // std::cout << "Input: " << input << ", Result: " << result << std::endl;
+
+
+    return result;
+}
+
+
+void addToPostingList(std::map<std::string, PostingList>& postingLists, const std::string& term, int docID, int termPosition) {
+    // Check if the term exists in the posting list
+    if (postingLists.find(term) == postingLists.end()) {
+        // Term not present, create a new entry
+        PostingList newPostingList;
+        newPostingList.termFrequency = 1;
+        newPostingList.documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
+        postingLists[term] = newPostingList;
+    } else {
+        // Term is present, update the posting list
+        postingLists[term].termFrequency++;
+        postingLists[term].documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
+    }
+}
+
+
+void printPostingLists(const std::map<std::string, PostingList>& postingLists) {
+    for (const auto& posting : postingLists) {
+        std::cout << "Term: " << posting.first << ", ";
+        std::cout << "Term Frequency: " << posting.second.termFrequency << ", ";
+        std::cout << "Document IDs: ";
+        for (const auto& docInfo : posting.second.documentIDs) {
+            std::cout << "(" << docInfo.first << ", ";
+            for (int position : docInfo.second) {
+                std::cout << position;
+            }
+            std::cout << ") ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+
+
+// Function to parse the .trec file and create intermediate posting lists
+void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std::vector<std::string>& documents, const int chunkSize) {
+    // std::ifstream trecFile(filename);
+    // if (!trecFile.is_open()) {
+    //     std::cerr << "Failed to open the .trec file." << std::endl;
+    //     exit(1);
+    // }
+
+    // Define a map to store posting lists for terms
+    std::map<std::string, PostingList> postingLists;
+    std::map<std::string, int> urlToDocIDMap;
+
+    // std::vector<Document> parsedDocuments;
+    std::string line;
+    std::string documentContent;
+    std::string urlContent;
+    int documentID = -1;
+    int termPosition = 0;
+    bool isInsideTextTag = false;
+    int sizeCount = 0;
+    
+
+
+    while (std::getline(trecFile, line)) {
+        std::cout << "line: " << line << std::endl;
+
+        if (sizeCount > chunkSize) {
+            break;
+        }
+
+        if (line.find("<TEXT>") != std::string::npos) {
+            isInsideTextTag = true;
+            // Reset URL and document content when entering <TEXT> tag
+            urlContent.clear();
+            documentContent.clear();
+            documentID++;   // Every new <TEXT> tag is treated as a new document.
+            sizeCount++; // For chunking purpose
+            termPosition = 0;
+            continue;  // Skip the line with "<TEXT>"
+        }
+        if (line.find("</TEXT>") != std::string::npos) {
+            isInsideTextTag = false;
+            continue;  // Skip the line with "</TEXT>"
+        }
+
+        if (isInsideTextTag) {
+            if (urlContent.empty()) {
+                // The first line after <TEXT> is the URL
+                urlContent += line;
+                urls.push_back(line);
+                urlToDocIDMap[line] = documentID;
+            } else {
+                // Append to document content
+                // Split the line into words
+                std::istringstream iss(line);
+                std::vector<std::string> words;
+                std::string word;
+                while (iss >> word) {
+                    std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+                    // words.push_back(removeCharactersFromBothEnds(word));
+                    addToPostingList(postingLists, removeCharactersFromBothEnds(word), documentID, termPosition);
+                    termPosition++;
+                }
+
+                // std::cout << "Document Words (Sorted):\n" << joinWithSpaces(words) << std::endl;
+
+              
+
+                // Sort the words using merge sort
+                // std::vector<std::string> sortedWords = mergeSort(words);
+
+                // std::cout << "Document Words sorted after sort(Sorted):\n" << joinWithSpaces(sortedWords) << std::endl;
+
+                // Append the sorted words to the document content
+                // for (const std::string& sortedWord : sortedWords) {
+                //     documentContent += sortedWord + " ";
+                // }
+
+                // std::cout << "Document Content (Sorted):\n" << documentContent << std::endl;
+                // documentContent += line + "\n";
+            }
+        }
+
+        // return this in the future.
+        printPostingLists(postingLists);
+
+        // if (isInsideTextTag) {
+        //     // Inside <TEXT>, split the content by "\n"
+        //     std::size_t newlinePos = line.find("\n");
+        //     if (newlinePos != std::string::npos) {
+        //         // Split the content based on "\n"
+        //         std::string urlPart = line.substr(0, newlinePos);
+        //         std::string documentPart = line.substr(newlinePos + 1);
+        //         urls.push_back(urlPart);
+        //         documents.push_back(documentPart);
+        //         std::cout << "urlPart: " << urlPart << ", Document: " << documentPart << std::endl;
+        //     } 
+        //     // else {
+        //     //     // No newline character, consider this as URL
+        //     //     urls.push_back(line);
+        //     // }
+        // } 
+        
+        
+        // else {
+        //     // Outside <TEXT>, consider this as URL
+        //     urls.push_back(line);
+        // }
+
+        // std::istringstream iss(line);
+        // Document doc;
+
+        // if (iss >> doc.term) {
+        //     if (!(iss >> doc.docID)) {
+        //         // Failed to parse docID
+        //         urls.push_back(line);  // Add the URL
+        //     } else {
+        //         // Successfully parsed term and docID
+        //         parsedDocuments.push_back(doc);
+        //     }
+        // }
+    }
+
+    // Process the parsed documents as needed
+    // for (const Document& doc : parsedDocuments) {
+    //     std::cout << "Term: " << doc.term << ", DocID: " << doc.docID << std::endl;
+    // }
+}
+
+int main() {
+    const std::string trecFilename = "D:\\Notes\\Web Search Engines\\Assignment 2\\fulldocs-new.trec";
+    // std::vector<std::string> urls;
+    // std::vector<std::string> documents;
+    // const int chunkSize = 2;
+
+    std::ifstream trecFile(trecFilename); // Open the TREC file
+
+    if (!trecFile.is_open()) {
+        std::cerr << "Failed to open the .trec file." << std::endl;
+        return 1;
+    }
+
+    const int chunkSize = 20;
+    std::vector<std::string> urls;
+    std::vector<std::string> documents;
+    
+    // Process the file in chunks
+    // int documentsProcessed = 0;
+    while (!trecFile.eof()) {
+        parseTrecFile(trecFile, urls, documents, chunkSize);
+        // documentsProcessed += chunkSize;
+
+        // Further process 'urls' and 'documents' as needed
+        // Clear 'urls' and 'documents' vectors for the next chunk if necessary
+        urls.clear();
+        documents.clear();
+    }
+
+    // Close the file when done
+    trecFile.close();
+
+    // parseTrecFile(trecFilename, urls, documents, chunkSize);
+
+    // You now have URLs and documents with their corresponding parts.
+    // Process them further as needed.
+
+    return 0;
+}
