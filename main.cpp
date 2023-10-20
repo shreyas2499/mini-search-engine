@@ -4,6 +4,8 @@
 #include <sstream>
 #include <algorithm>
 #include <map>
+#include <chrono>
+
 
 // Define constants for maximum term and URL lengths
 const int MAX_TERM_LENGTH = 256;
@@ -18,14 +20,14 @@ struct Document {
 // Define a data structure for the posting list
 struct PostingList {
     int termFrequency;
-    std::vector<std::pair<int, std::vector<uint8_t>>> documentIDs;
+    std::vector<std::pair<int, std::vector<int>>> documentIDs;
 };
 
 int documentID = -1;
 
 // Function to remove specified characters from the beginning and end of a string
 std::string removeCharactersFromBothEnds(const std::string& input) {
-    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"' };
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"'};
 
     std::string result = input;
 
@@ -85,20 +87,20 @@ void addToPostingList(std::map<std::string, PostingList>& postingLists, const st
         // Term not present, create a new entry
         PostingList newPostingList;
         newPostingList.termFrequency = 1;
-        std::cout << term << "," << termPosition << std::endl;
-        VarEncode(termPosition, encodedTermPosition);
-        newPostingList.documentIDs.push_back(std::make_pair(docID, std::vector<uint8_t>{encodedTermPosition}));
+        // std::cout << term << "," << termPosition << std::endl;
+        // VarEncode(termPosition, encodedTermPosition);
+        newPostingList.documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
         postingLists[term] = newPostingList;
     } else {
         // Term is present, update the posting list
         postingLists[term].termFrequency++;
         
-        std::cout << term << "," << termPosition << std::endl;
+        // std::cout << term << "," << termPosition << std::endl;
          // Encode the termPosition using VarByte encoding
         std::vector<uint8_t> encodedTermPosition;
-        VarEncode(termPosition, encodedTermPosition);
+        // VarEncode(termPosition, encodedTermPosition);
 
-        postingLists[term].documentIDs.push_back(std::make_pair(docID, std::vector<uint8_t>{encodedTermPosition}));
+        postingLists[term].documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
     }
 }
 
@@ -130,7 +132,7 @@ void outputDocIDToUrlMapToFile(const std::map<int, std::string>& docIDToUrlMap) 
     std::ofstream outputFile("docIDToUrlMapping.txt", std::ios::out | std::ios::trunc);
     if (outputFile.is_open()) {
         for (const auto& entry : docIDToUrlMap) {
-            std::cout << entry.first << ": " << entry.second << std::endl;
+            // std::cout << entry.first << ": " << entry.second << std::endl;
             outputFile << entry.first << ": " << entry.second << std::endl;
         }
 
@@ -154,7 +156,7 @@ void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std:
     bool isInsideTextTag = false;
     int sizeCount = 0;
 
-    std::cout << "documentID" << documentID << std::endl;
+    // std::cout << "documentID" << documentID << std::endl;
 
     while (std::getline(trecFile, line)) {
         std::cerr << line << std::endl;
@@ -210,6 +212,7 @@ void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std:
 int main() {
     const std::string trecFilename = "D:\\Notes\\Web Search Engines\\Assignment 2\\fulldocs-new.trec";
     std::ifstream trecFile(trecFilename);
+    // trecFile.imbue(std::locale("en_US.UTF-8"));
 
     if (!trecFile.is_open()) {
         std::cerr << "Failed to open the .trec file." << std::endl;
@@ -226,15 +229,28 @@ int main() {
     std::ofstream outputFile2("test.txt", std::ios::trunc);
     std::ofstream docIDToUrlMapping("test2.txt", std::ios::trunc);
     int count = 0;
+
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     while (!trecFile.eof()) {
-        if(count == 2500){
-            break;
-        }
+        // if(count == 2500){
+        //     break;
+        // }
         count++;
         parseTrecFile(trecFile, urls, documents, chunkSize, outputFile2, docIDToUrlMapping, docIDToUrlMap, postingLists);
         urls.clear();
         documents.clear();
     }
+
+    // Stop the timer after the while loop
+    auto endTime = std::chrono::high_resolution_clock::now();
+
+    // Calculate the duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+
+    // Print the elapsed time
+    std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+
 
     trecFile.close();
     outputFile2.close();

@@ -124,7 +124,7 @@ void addToPostingList(std::map<std::string, PostingList>& postingLists, const st
         newPostingList.termFrequency = 1;
         newPostingList.documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
         postingLists[term] = newPostingList;
-    } else {
+    } else {    
         // Term is present, update the posting list
         postingLists[term].termFrequency++;
         postingLists[term].documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
