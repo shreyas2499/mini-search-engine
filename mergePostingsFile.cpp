@@ -3,9 +3,9 @@
 #include <vector>
 #include <queue>
 #include <string>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 using namespace std;
 
@@ -52,13 +52,9 @@ void externalMergeSort(const vector<string>& inputFileNames, const string& outpu
 
 // Function to recursively find files in a directory
 void findFilesInDirectory(const fs::path& dirPath, vector<string>& fileNames) {
-    fs::directory_iterator end_iter;
-
-    for (fs::directory_iterator dir_itr(dirPath); dir_itr != end_iter; ++dir_itr) {
-        if (fs::is_regular_file(dir_itr->status())) {
-            fileNames.push_back(dir_itr->path().string());
-        } else if (fs::is_directory(dir_itr->status())) {
-            findFilesInDirectory(dir_itr->path(), fileNames);
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.is_regular_file() && entry.path().filename().string().find("postings_") != string::npos) {
+            fileNames.push_back(entry.path().string());
         }
     }
 }
