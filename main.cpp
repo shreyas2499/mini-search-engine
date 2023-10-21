@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <map>
 #include <chrono>
+#include <filesystem>
 
+namespace fs = std::filesystem;
 
 // Define constants for maximum term and URL lengths
 const int MAX_TERM_LENGTH = 256;
@@ -19,15 +21,15 @@ struct Document {
 
 // Define a data structure for the posting list
 struct PostingList {
-    int termFrequency;
-    std::vector<std::pair<int, std::vector<int>>> documentIDs;
+    std::map<int, int> documentFrequencies;
 };
 
 int documentID = -1;
+int fileIndex = 0;
 
 // Function to remove specified characters from the beginning and end of a string
 std::string removeCharactersFromBothEnds(const std::string& input) {
-    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"'};
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"','\'', '[', ']', '/'};
 
     std::string result = input;
 
@@ -50,7 +52,6 @@ std::string removeCharactersFromBothEnds(const std::string& input) {
     return result;
 }
 
-
 // Function to compress an integer using VarByte and append the result to a vector
 void VarEncodeTermPosition(int termPosition, std::vector<uint8_t>& encodedPositions) {
     while (termPosition > 127) {
@@ -60,64 +61,34 @@ void VarEncodeTermPosition(int termPosition, std::vector<uint8_t>& encodedPositi
     encodedPositions.push_back(static_cast<uint8_t>(termPosition));
 }
 
-
 void VarEncode(int number, std::vector<uint8_t>& encoded) {
     while (number >= 128) {
         uint8_t encodedValue = static_cast<uint8_t>((number & 127) | 128);
         encoded.push_back(encodedValue);
         encoded.push_back(' ');
-        // std::cout << "Encoded: " << static_cast<int>(encodedValue) << std::endl;
         number >>= 7;
-        // std::cout << "Number after shift: " << number << std::endl;
     }
     uint8_t finalValue = static_cast<uint8_t>(number);
     encoded.push_back(finalValue);
-    // std::cout << "Final Value: " << static_cast<int>(finalValue) << std::endl;
 }
 
-
 // Function to add an entry to the posting list
-void addToPostingList(std::map<std::string, PostingList>& postingLists, const std::string& term, int docID, int termPosition) {
-    // Check if the term exists in the posting list
-
-    std::vector<uint8_t> encodedTermPosition;
-
-
+void addToPostingList(std::map<std::string, PostingList>& postingLists, const std::string& term, int docID) {
     if (postingLists.find(term) == postingLists.end()) {
-        // Term not present, create a new entry
         PostingList newPostingList;
-        newPostingList.termFrequency = 1;
-        // std::cout << term << "," << termPosition << std::endl;
-        // VarEncode(termPosition, encodedTermPosition);
-        newPostingList.documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
+        newPostingList.documentFrequencies[docID] = 1;
         postingLists[term] = newPostingList;
     } else {
-        // Term is present, update the posting list
-        postingLists[term].termFrequency++;
-        
-        // std::cout << term << "," << termPosition << std::endl;
-         // Encode the termPosition using VarByte encoding
-        std::vector<uint8_t> encodedTermPosition;
-        // VarEncode(termPosition, encodedTermPosition);
-
-        postingLists[term].documentIDs.push_back(std::make_pair(docID, std::vector<int>{termPosition}));
+        postingLists[term].documentFrequencies[docID]++;
     }
 }
 
 // Function to print the posting lists
-void writePostingListsToFile(const std::map<std::string, PostingList>& postingLists) {
-    std::ofstream outputFile("postingsList.txt", std::ios::out | std::ios::trunc);
-    
+void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::string, PostingList>& postingLists) {
     for (const auto& posting : postingLists) {
-        outputFile << posting.first << ", ";
-        outputFile << posting.second.termFrequency << ": ";
-        outputFile << "Document IDs: ";
-        for (const auto& docInfo : posting.second.documentIDs) {
-            outputFile << "(" << docInfo.first << ", ";
-            for (int position : docInfo.second) {
-                outputFile << position;
-            }
-            outputFile << ") ";
+        outputFile << posting.first << ": ";
+        for (const auto& docInfo : posting.second.documentFrequencies) {
+            outputFile << "(" << docInfo.first << ", " << docInfo.second << ") ";
         }
         outputFile << std::endl;
     }
@@ -125,14 +96,12 @@ void writePostingListsToFile(const std::map<std::string, PostingList>& postingLi
     std::cout << "Postings have been written to " << "postingsList.txt" << std::endl;
 
     outputFile.close();
-
 }
 
 void outputDocIDToUrlMapToFile(const std::map<int, std::string>& docIDToUrlMap) {
     std::ofstream outputFile("docIDToUrlMapping.txt", std::ios::out | std::ios::trunc);
     if (outputFile.is_open()) {
         for (const auto& entry : docIDToUrlMap) {
-            // std::cout << entry.first << ": " << entry.second << std::endl;
             outputFile << entry.first << ": " << entry.second << std::endl;
         }
 
@@ -143,12 +112,17 @@ void outputDocIDToUrlMapToFile(const std::map<int, std::string>& docIDToUrlMap) 
     outputFile.close();
 }
 
-// Function to parse the .trec file and create intermediate posting lists
-void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std::vector<std::string>& documents, const int chunkSize, std::ofstream& outputFile, std::ofstream& docIDToUrlMapping, std::map<int, std::string>& docIDToUrlMap, std::map<std::string, PostingList>& postingLists) {
-    // Define a map to store posting lists for terms
-    // std::map<std::string, PostingList> postingLists;
-    // std::map<int, std::string> docIDToUrlMap;
+bool skipWord(std::string word){
+    return word == std::string(".") || word == std::string(",") || word == std::string("?") || word == std::string("!") ||
+    word == std::string(":") || word == std::string(";") || word == std::string("-") || word == std::string(" ") ||
+    word == std::string(")") || word == std::string("(") || word == std::string("\"") || word == std::string("/");
+}
 
+
+// Function to parse a .txt file and create intermediate posting lists
+void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::vector<std::string>& documents, std::map<int, std::string>& docIDToUrlMap) {
+    std::map<std::string, PostingList> postingLists;
+    
     std::string line;
     std::string documentContent;
     std::string urlContent;
@@ -156,11 +130,8 @@ void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std:
     bool isInsideTextTag = false;
     int sizeCount = 0;
 
-    // std::cout << "documentID" << documentID << std::endl;
-
-    while (std::getline(trecFile, line)) {
-        std::cerr << line << std::endl;
-        if (sizeCount > chunkSize) {
+    while (std::getline(txtFile, line)) {
+        if (sizeCount > 10) { // Set your chunk size here
             break;
         }
 
@@ -191,70 +162,72 @@ void parseTrecFile(std::ifstream& trecFile, std::vector<std::string>& urls, std:
                 std::vector<std::string> words;
                 std::string word;
                 while (iss >> word) {
+                    if(skipWord(word)){
+                        continue;
+                    }
                     std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-                    addToPostingList(postingLists, removeCharactersFromBothEnds(word), documentID, termPosition);
+                    addToPostingList(postingLists, removeCharactersFromBothEnds(word), documentID);
                     termPosition++;
                 }
             }
         }
+    
     }
 
-    // if (outputFile.is_open()) {
-    // Call writePostingListsToFile to write data to the file
-    writePostingListsToFile(postingLists);
-    // } else {/
-        // std::cerr << "Failed to open the output file." << std::endl;
-    // }
-    
+
+    const std::string folderName = "postings";
+    if (!fs::is_directory(folderName)) {
+        fs::create_directory(folderName); // Create the "data" folder if it doesn't exist
+    }
+
+    std::string file = "/postings_" + std::to_string(fileIndex) + ".txt";
+    std::string filepath = folderName + file;
+
+    std::ofstream outputFile(filepath, std::ios::out | std::ios::trunc);
+    // Output the posting lists and docIDToUrlMap
+    writePostingListsToFile(outputFile, postingLists);
+    outputFile.close();
     outputDocIDToUrlMapToFile(docIDToUrlMap);
 }
 
 int main() {
-    const std::string trecFilename = "D:\\Notes\\Web Search Engines\\Assignment 2\\fulldocs-new.trec";
-    std::ifstream trecFile(trecFilename);
-    // trecFile.imbue(std::locale("en_US.UTF-8"));
-
-    if (!trecFile.is_open()) {
-        std::cerr << "Failed to open the .trec file." << std::endl;
-        return 1;
-    }
-
-    const int chunkSize = 10;
-    std::vector<std::string> urls;
-    std::vector<std::string> documents;
-    std::map<std::string, PostingList> postingLists;
+    const std::string dataDirectory = "data"; // Set the path to your data folder
     std::map<int, std::string> docIDToUrlMap;
-
-    // Open the output file
-    std::ofstream outputFile2("test.txt", std::ios::trunc);
-    std::ofstream docIDToUrlMapping("test2.txt", std::ios::trunc);
-    int count = 0;
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    while (!trecFile.eof()) {
-        // if(count == 2500){
-        //     break;
-        // }
-        count++;
-        parseTrecFile(trecFile, urls, documents, chunkSize, outputFile2, docIDToUrlMapping, docIDToUrlMap, postingLists);
-        urls.clear();
-        documents.clear();
+    
+    // Use std::filesystem to recursively iterate over .txt files in the data folder
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(dataDirectory)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+            // Open the .txt file for processing
+            std::ifstream txtFile(entry.path().string());
+            
+            if (!txtFile.is_open()) {
+                std::cerr << "Failed to open the .txt file: " << entry.path() << std::endl;
+                continue;
+            }
+
+            std::vector<std::string> urls;
+            std::vector<std::string> documents;
+
+            while (!txtFile.eof()) {
+                parseTxtFile(txtFile, urls, documents, docIDToUrlMap);
+                fileIndex++;
+                urls.clear();
+                documents.clear();
+            }
+
+            txtFile.close();
+        }
     }
 
-    // Stop the timer after the while loop
     auto endTime = std::chrono::high_resolution_clock::now();
-
-    // Calculate the duration in milliseconds
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-    // Print the elapsed time
     std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 
-
-    trecFile.close();
-    outputFile2.close();
-    docIDToUrlMapping.close();
     
+
     return 0;
 }
