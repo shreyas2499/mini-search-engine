@@ -7,7 +7,7 @@
 #include <chrono>
 #include <filesystem>
 
-namespace fs = std::__fs::filesystem;
+namespace fs = std::filesystem;
 
 // Define constants for maximum term and URL lengths
 const int MAX_TERM_LENGTH = 256;
@@ -194,10 +194,24 @@ int main() {
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
+    std::vector<fs::directory_entry> entries;
+
+    // Populate the entries vector with all files in the directory
+    for (const auto& entry : fs::recursive_directory_iterator(dataDirectory)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+            entries.push_back(entry);
+        }
+    }
+
+    // Sort the entries by filename (you can customize the sorting criteria)
+    std::sort(entries.begin(), entries.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
+        return a.path().filename().string() < b.path().filename().string();
+    });
+
     
     // Use std::filesystem to recursively iterate over .txt files in the data folder
-    for (const auto& entry : std::__fs::filesystem::recursive_directory_iterator(dataDirectory)) {
-        if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
+    for (const auto& entry : entries) {
+        // if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
             // Open the .txt file for processing
             std::ifstream txtFile(entry.path().string());
             
@@ -210,15 +224,13 @@ int main() {
             std::vector<std::string> documents;
 
             while (!txtFile.eof()) {
-                parseTxtFile(txtFile, urls, documents, docIDToUrlMap);
-                
+                parseTxtFile(txtFile, urls, documents, docIDToUrlMap);    
                 urls.clear();
                 documents.clear();
             }
-
             txtFile.close();
             fileIndex++;
-        }
+        // }
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
