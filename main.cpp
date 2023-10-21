@@ -7,7 +7,7 @@
 #include <chrono>
 #include <filesystem>
 
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 
 // Define constants for maximum term and URL lengths
 const int MAX_TERM_LENGTH = 256;
@@ -84,7 +84,7 @@ void addToPostingList(std::map<std::string, PostingList>& postingLists, const st
 }
 
 // Function to print the posting lists
-void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::string, PostingList>& postingLists) {
+void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::string, PostingList>& postingLists, std::string fileName) {
     for (const auto& posting : postingLists) {
         outputFile << posting.first << ": ";
         for (const auto& docInfo : posting.second.documentFrequencies) {
@@ -93,7 +93,7 @@ void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::stri
         outputFile << std::endl;
     }
 
-    std::cout << "Postings have been written to " << "postingsList.txt" << std::endl;
+    std::cout << "Postings have been written to " << fileName << std::endl;
 
     outputFile.close();
 }
@@ -131,10 +131,7 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     int sizeCount = 0;
 
     while (std::getline(txtFile, line)) {
-        if (sizeCount > 10) { // Set your chunk size here
-            break;
-        }
-
+    
         if (line.find("<DOC>") != std::string::npos) {
             sizeCount++;
         }
@@ -182,10 +179,11 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
 
     std::string file = "/postings_" + std::to_string(fileIndex) + ".txt";
     std::string filepath = folderName + file;
+    std::string filename = "postings_" + std::to_string(fileIndex) + ".txt";
 
     std::ofstream outputFile(filepath, std::ios::out | std::ios::trunc);
     // Output the posting lists and docIDToUrlMap
-    writePostingListsToFile(outputFile, postingLists);
+    writePostingListsToFile(outputFile, postingLists, filename);
     outputFile.close();
     outputDocIDToUrlMapToFile(docIDToUrlMap);
 }
@@ -198,8 +196,8 @@ int main() {
 
     
     // Use std::filesystem to recursively iterate over .txt files in the data folder
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(dataDirectory)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+    for (const auto& entry : std::__fs::filesystem::recursive_directory_iterator(dataDirectory)) {
+        if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
             // Open the .txt file for processing
             std::ifstream txtFile(entry.path().string());
             
@@ -213,12 +211,13 @@ int main() {
 
             while (!txtFile.eof()) {
                 parseTxtFile(txtFile, urls, documents, docIDToUrlMap);
-                fileIndex++;
+                
                 urls.clear();
                 documents.clear();
             }
 
             txtFile.close();
+            fileIndex++;
         }
     }
 
