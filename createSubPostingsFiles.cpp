@@ -54,40 +54,47 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
             case 'a':
             case 'b':
             case 'c':
-                outputFileIndex = 0;
+                outputFileIndex = 1;
                 break;
             case 'd':
             case 'e':
             case 'f':
-                outputFileIndex = 1;
+                outputFileIndex = 2;
                 break;
             case 'g':
             case 'h':
             case 'i':
-                outputFileIndex = 2;
+                outputFileIndex = 3;
                 break;
             case 'j':
             case 'k':
             case 'l':
-                outputFileIndex = 3;
+                outputFileIndex = 4;
                 break;
             case 'm':
             case 'n':
             case 'o':
-                outputFileIndex = 4;
+                outputFileIndex = 5;
                 break;
             case 'p':
             case 'q':
             case 'r':
-                outputFileIndex = 5;
+                outputFileIndex = 6;
                 break;
             case 's':
             case 't':
             case 'u':
-                outputFileIndex = 6;
+                outputFileIndex = 7;
+                break;
+            case 'v':
+            case 'w':
+            case 'x':
+            case 'y':
+            case 'z':
+                outputFileIndex = 8;
                 break;
             default:
-                outputFileIndex = 7;
+                outputFileIndex = 0;
                 break;
         }
 
@@ -135,6 +142,7 @@ int main() {
 
     // Define the output files based on starting letters
     vector<string> outputFiles = {
+        "output_misc.txt", // Lines starting with misc characters and numbers
         "output_a_c.txt",  // Lines starting with a, b, c
         "output_d_f.txt",  // Lines starting with d, e, f
         "output_g_i.txt",  // Lines starting with g, h, i
