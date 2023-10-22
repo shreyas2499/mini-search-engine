@@ -1,0 +1,78 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <bitset>
+#include <regex>
+
+// Function to encode an integer using VarByte and return binary representation
+std::string varByteEncode(int number) {
+    std::vector<unsigned char> encodedBytes;
+
+    while (number > 0) {
+        // Encode 7 bits at a time (bottom 7 bits of the integer)
+        unsigned char byte = number & 0x7F;
+        // Set the high bit to 1 to indicate more bytes or 0 to indicate the last byte
+        if (number > 0x7F) {
+            byte |= 0x80;
+        }
+        encodedBytes.push_back(byte);
+
+        number >>= 7;
+    }
+
+    return std::string(encodedBytes.begin(), encodedBytes.end());
+}
+
+int main() {
+    std::ifstream inputFile("Text/postingsList.txt");
+    std::ofstream outputFile("Testest2.bin", std::ios::out | std::ios::binary); // Open in binary mode
+
+    if (!inputFile.is_open() || !outputFile.is_open()) {
+        std::cerr << "Error: Could not open files." << std::endl;
+        return 1;
+    }
+
+    std::string line;
+    std::regex entryPattern("(#?\\w+):?\\s*\\((\\d+), (\\d+)\\)");
+
+    while (std::getline(inputFile, line)) {
+        size_t pos = line.find(":");
+
+        if (pos != std::string::npos) {
+            std::string word = line.substr(0, pos);
+
+            if (!word.empty()) {
+                std::string rest = line.substr(pos + 1);
+                std::stringstream ss(rest);
+                char c;
+                int a, b;
+                outputFile.write(word.c_str(), word.size());
+                outputFile.write(" ", 1);
+                while (ss >> c >> a >> c >> b >> c) {
+                    int docID = a;
+                    int frequency = b;
+                    int count = 0;
+                    // Encode the docID and frequency using VarByte
+                    std::string binaryDocID = varByteEncode(docID);
+                    std::string binaryFrequency = varByteEncode(frequency);
+
+                    // Write the encoded data to the binary file
+                    if(count != 0){
+                        outputFile.write(",", 1);
+                    }
+                    outputFile.write(binaryDocID.c_str(), binaryDocID.size());
+                    outputFile.write(" ", 0);
+                    outputFile.write(binaryFrequency.c_str(), binaryFrequency.size());
+                    count++;
+                }
+                outputFile.write("\n", 1);
+            }
+        }
+    }
+
+    inputFile.close();
+    outputFile.close();
+
+    std::cout << "VarByte encoding completed. Results saved to 'Testest2.bin'." << std::endl;
+    return 0;
+}
