@@ -50,85 +50,85 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
         char startingLetter = tolower(top.line[0]);
         int outputFileIndex;
 
-        // switch (startingLetter) {
-        //     case 'a': 
-        //         outputFileIndex = 1;
-        //         break;
-        //     case 'b':
-        //         outputFileIndex = 2;
-        //         break;  
-        //     case 'c':
-        //         outputFileIndex = 3;
-        //         break;
-        //     case 'd':
-        //         outputFileIndex = 4;
-        //         break;
-        //     case 'e':
-        //         outputFileIndex = 5;
-        //         break;
-        //     case 'f':
-        //         outputFileIndex = 6;
-        //         break;
-        //     case 'g':
-        //         outputFileIndex = 7;
-        //         break;
-        //     case 'h':
-        //         outputFileIndex = 8;
-        //         break;
-        //     case 'i':
-        //         outputFileIndex = 9;
-        //         break;
-        //     case 'j':
-        //         outputFileIndex = 10;
-        //         break;
-        //     case 'k':
-        //         outputFileIndex = 11;
-        //         break;
-        //     case 'l':
-        //         outputFileIndex = 12;
-        //         break;
-        //     case 'm':
-        //         outputFileIndex = 13;
-        //         break;
-        //     case 'n':
-        //         outputFileIndex = 14;
-        //         break;
-        //     case 'o':
-        //         outputFileIndex = 15;
-        //         break;
-        //     case 'p':
-        //         outputFileIndex = 16;
-        //         break;
-        //     case 'q':
-        //         outputFileIndex = 17;
-        //         break;
-        //     case 'r':
-        //         outputFileIndex = 18;
-        //         break;
-        //     case 's':
-        //         outputFileIndex = 19;
-        //         break;
-        //     case 't':
-        //         outputFileIndex = 20;
-        //         break;
-        //     case 'u':
-        //         outputFileIndex = 21;
-        //         break;
-        //     case 'v':
-        //         outputFileIndex = 22;
-        //         break;
-        //     case 'w':
-        //     case 'x':
-        //     case 'y':
-        //     case 'z':
-        //         outputFileIndex = 23;
-        //         break;
-        //     default:
-        //         outputFileIndex = 0;
-        //         break;
-        // }
+        switch (startingLetter) {
+            case 'a': 
+                outputFileIndex = 1;
+                break;
+            case 'b':
+                outputFileIndex = 2;
+                break;  
+            case 'c':
+                outputFileIndex = 3;
+                break;
+            case 'd':
+                outputFileIndex = 4;
+                break;
+            case 'e':
+                outputFileIndex = 5;
+                break;
+            case 'f':
+                outputFileIndex = 6;
+                break;
+            case 'g':
+                outputFileIndex = 7;
+                break;
+            case 'h':
+                outputFileIndex = 8;
+                break;
+            case 'i':
+                outputFileIndex = 9;
+                break;
+            case 'j':
+                outputFileIndex = 10;
+                break;
+            case 'k':
+                outputFileIndex = 11;
+                break;
+            case 'l':
+                outputFileIndex = 12;
+                break;
+            case 'm':
+                outputFileIndex = 13;
+                break;
+            case 'n':
+                outputFileIndex = 14;
+                break;
+            case 'o':
+                outputFileIndex = 15;
+                break;
+            case 'p':
+                outputFileIndex = 16;
+                break;
+            case 'q':
+                outputFileIndex = 17;
+                break;
+            case 'r':
+                outputFileIndex = 18;
+                break;
+            case 's':
+                outputFileIndex = 19;
+                break;
+            case 't':
+                outputFileIndex = 20;
+                break;
+            case 'u':
+                outputFileIndex = 21;
+                break;
+            case 'v':
+                outputFileIndex = 22;
+                break;
+            case 'w':
+            case 'x':
+            case 'y':
+            case 'z':
+                outputFileIndex = 23;
+                break;
+            default:
+                outputFileIndex = 0;
+                break;
+        }
 
-        string outputFilePath = outputFolderPath + outputFiles[0];
+        string outputFilePath = outputFolderPath + outputFiles[outputFileIndex];
 
         ofstream outputFile(outputFilePath, ios_base::app); // Open in append mode
         // std::cout << "Read to file: " << top.line << std::endl;
@@ -174,7 +174,31 @@ int main() {
 
     // Define the output files based on starting letters
     vector<string> outputFiles = {
-        "postings_inverted.txt", // Lines starting with misc characters and numbers
+        "postings_misc.txt", // Lines starting with misc characters and numbers
+        "postings_a.txt",  // Lines starting with a
+        "postings_b.txt",  // Lines starting with b
+        "postings_c.txt",  // Lines starting with c
+        "postings_d.txt",  // Lines starting with d
+        "postings_e.txt",  // Lines starting with e
+        "postings_f.txt",  // Lines starting with f
+        "postings_g.txt",  // Lines starting with g
+        "postings_h.txt",  // Lines starting with h
+        "postings_i.txt",  // Lines starting with i
+        "postings_j.txt",  // Lines starting with j
+        "postings_k.txt",  // Lines starting with k
+        "postings_l.txt",  // Lines starting with l
+        "postings_m.txt",  // Lines starting with m
+        "postings_n.txt",  // Lines starting with n
+        "postings_o.txt",  // Lines starting with o
+        "postings_p.txt",  // Lines starting with p
+        "postings_q.txt",  // Lines starting with q    
+        "postings_r.txt",  // Lines starting with r
+        "postings_s.txt",  // Lines starting with s
+        "postings_t.txt",  // Lines starting with t
+        "postings_u.txt",  // Lines starting with u
+        "postings_v.txt",  // Lines starting with v
+        "postings_w_z.txt",  // Lines starting with w, x, y, z
+        
     };
 
     externalMergeSort(inputFileNames, outputFiles);

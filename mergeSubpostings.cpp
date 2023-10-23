@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <unordered_map>  // Added for the hashtable
 
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 
 using namespace std;
 
@@ -75,12 +75,16 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
     ifstream inputFile(inputFilePath);
     unordered_map<string, pair<int, int>> hashtable; // word -> {frequency, line number}
 
+
+    // Save the sorted hashtable to the output file
+    ofstream outputFile(outputFilePath);
+
     // Read lines from the input file and process them
     int lineNumber = 1;
     string line;
     while (getline(inputFile, line)) {
         // Parse the line to extract word and data
-            size_t colonPos = line.find(':');
+        size_t colonPos = line.find(':');
         if (colonPos != string::npos) {
             string word = line.substr(0, colonPos);
             string data = line.substr(colonPos); // Skip ': ' after colon
@@ -100,8 +104,7 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
     }
 
     inputFile.close();
-
-
+    
     // Create a vector of pairs for sorting
     vector<pair<string, pair<int, int>> > sortedHashtable(hashtable.begin(), hashtable.end());
 
@@ -112,8 +115,7 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
         }
     );
 
-    // Save the sorted hashtable to the output file
-    ofstream outputFile(outputFilePath);
+
     for (const auto& entry : sortedHashtable) {
         outputFile << entry.first << ", " << entry.second.first << " - " << entry.second.second << endl;
     }
@@ -123,14 +125,14 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
 // Function to recursively find files in a directory
 void findFilesInDirectory(const fs::path& dirPath, vector<string>& fileNames) {
     for (const auto& entry : fs::directory_iterator(dirPath)) {
-        if (entry.is_regular_file() && entry.path().filename().string().find("output_") != string::npos) {
+        if (entry.is_regular_file() && entry.path().filename().string().find("postings_") != string::npos) {
             fileNames.push_back(entry.path().string());
         }
     }
 }
 
 int main() {
-    string directoryPath = "sortedPostings/";
+    string directoryPath = "sortedPostingsAlphabetically/";
     vector<string> inputFileNames;
     vector<string> allFileNames;
 
@@ -138,7 +140,7 @@ int main() {
     findFilesInDirectory(directoryPath, allFileNames);
 
     for (const string& fileName : allFileNames) {
-        if (fileName.find("output_") != string::npos) {
+        if (fileName.find("postings_") != string::npos) {
             inputFileNames.push_back(fileName);
         }
     }
@@ -148,7 +150,8 @@ int main() {
         "postings_inverted.txt", // Lines starting with misc characters and numbers
     };
 
-    externalMergeSort(inputFileNames, outputFiles);
+    // externalMergeSort(inputFileNames, outputFiles);
+    std::cerr << "Merging Completed" << std::endl; 
 
     string outputFolderPath = "hashtable/";
     string fileName = "hashtable.txt";
@@ -161,6 +164,7 @@ int main() {
 
     // Create and save the hashtable
     createAndSaveHashtable("mergePostings/"+ outputFiles[0], filePath);
+    std::cerr << "Hash table created" << std::endl;
 
     return 0;
 }

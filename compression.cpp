@@ -31,14 +31,10 @@ std::string varByteEncode(int number) {
 
 int main() {
     // List of input file names
-    std::vector<std::string> inputFiles = {"postings_misc.txt","postings_a.txt", "postings_b.txt", "postings_c.txt", "postings_d.txt", 
-    "postings_e.txt", "postings_f.txt", "postings_g.txt", "postings_h.txt", "postings_i.txt", "postings_j.txt", 
-    "postings_k.txt", "postings_l.txt", "postings_m.txt", "postings_n.txt", "postings_o.txt", "postings_p.txt", 
-    "postings_q.txt", "postings_r.txt", "postings_s.txt", "postings_t.txt", "postings_u.txt", "postings_v.txt", 
-    "postings_w_z.txt"};
+    std::vector<std::string> inputFiles = {"postings_inverted.txt"};
     
     for (const std::string& inputFileName : inputFiles) {
-        std::ifstream inputFile("sortedPostingsAlphabetically/" + inputFileName);
+        std::ifstream inputFile("mergePostings/" + inputFileName);
         std::string outputFileName = inputFileName.substr(0, inputFileName.find_last_of('.')) + ".bin";
 
         std::string folderName = "compressed";

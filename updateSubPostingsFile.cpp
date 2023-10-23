@@ -22,15 +22,14 @@ void updateEntries(std::map<std::string, std::vector<std::pair<int, int>>>& data
     if (pos != std::string::npos) {
         std::string word = line.substr(0, pos);
         word = cleanWord(word);
-        std::cerr<<word<<std::endl;
 
-        for (const auto& entry : data) {
-            std::cout << entry.first << ": ";
-            for (const auto& pair : entry.second) {
-                std::cout << "(" << pair.first << ", " << pair.second << ") ";
-            }
-            std::cout << std::endl;
-        }
+        // for (const auto& entry : data) {
+        //     std::cout << entry.first << ": ";
+        //     for (const auto& pair : entry.second) {
+        //         std::cout << "(" << pair.first << ", " << pair.second << ") ";
+        //     }
+        //     std::cout << std::endl;
+        // }s
 
         if (!word.empty()) { // Check if the word is not empty after cleaning
             std::string rest = line.substr(pos + 1);
@@ -64,21 +63,37 @@ int main() {
 
     // Create a map to store the file names for each category
     std::unordered_map<char, std::string> categoryToFileName = {
-        {'_', "output_misc.txt"},
-        {'a', "output_a_c.txt"},
-        {'d', "output_d_f.txt"},
-        {'g', "output_g_i.txt"},
-        {'j', "output_j_l.txt"},
-        {'m', "output_m_o.txt"},
-        {'p', "output_p_r.txt"},
-        {'s', "output_s_u.txt"},
-        {'v', "output_v_z.txt"}
+        // Update this
+        {'_', "postings_misc.txt"},
+        {'a', "postings_a.txt"},
+        {'b', "postings_b.txt"},
+        {'c', "postings_c.txt"},
+        {'d', "postings_d.txt"},
+        {'e', "postings_e.txt"},
+        {'f', "postings_f.txt"},
+        {'g', "postings_g.txt"},
+        {'h', "postings_h.txt"},
+        {'i', "postings_i.txt"},
+        {'j', "postings_j.txt"},
+        {'k', "postings_k.txt"},
+        {'l', "postings_l.txt"},
+        {'m', "postings_m.txt"},
+        {'n', "postings_n.txt"},
+        {'o', "postings_o.txt"},
+        {'p', "postings_p.txt"},
+        {'q', "postings_q.txt"},
+        {'r', "postings_r.txt"},
+        {'s', "postings_s.txt"},
+        {'t', "postings_t.txt"},
+        {'u', "postings_u.txt"},
+        {'v', "postings_v.txt"},
+        {'w', "postings_w_z.txt"},
     };
 
     for (const auto& categoryFileNamePair : categoryToFileName) {
         char category = categoryFileNamePair.first;
         std::string fileName = categoryFileNamePair.second;
-        std::string filePath = "sortedPostings/" + fileName;
+        std::string filePath = "sortedPostingsAlphabetically/" + fileName;
 
         std::ifstream file(filePath);
 
@@ -88,8 +103,8 @@ int main() {
         }
 
         std::string line;
+        std::cerr << "Reading file: " << fileName << std::endl;
         while (std::getline(file, line)) {
-            std::cerr<<line<<std::endl;
             updateEntries(data, line);
         }
 
@@ -111,6 +126,7 @@ int main() {
         }
 
         outFile.close();
+        std::cerr << "Updated file: " << fileName << std::endl;
         data.clear();  // Clear the data for the next file
     }
 
