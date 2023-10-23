@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <unordered_map>  // Added for the hashtable
 
-namespace fs = std::__fs::filesystem;
+namespace fs = std::filesystem;
 
 using namespace std;
 
@@ -80,7 +80,7 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
     string line;
     while (getline(inputFile, line)) {
         // Parse the line to extract word and data
-        size_t colonPos = line.find(':');
+            size_t colonPos = line.find(':');
         if (colonPos != string::npos) {
             string word = line.substr(0, colonPos);
             string data = line.substr(colonPos); // Skip ': ' after colon
@@ -101,9 +101,20 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
 
     inputFile.close();
 
-    // Save the hashtable to the output file
+
+    // Create a vector of pairs for sorting
+    vector<pair<string, pair<int, int>> > sortedHashtable(hashtable.begin(), hashtable.end());
+
+    // Sort the vector alphabetically by word
+    sort(sortedHashtable.begin(), sortedHashtable.end(),
+        [](const pair<string, pair<int, int>>& a, const pair<string, pair<int, int>>& b) {
+            return a.first < b.first;
+        }
+    );
+
+    // Save the sorted hashtable to the output file
     ofstream outputFile(outputFilePath);
-    for (const auto& entry : hashtable) {
+    for (const auto& entry : sortedHashtable) {
         outputFile << entry.first << ", " << entry.second.first << " - " << entry.second.second << endl;
     }
     outputFile.close();
@@ -112,14 +123,14 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
 // Function to recursively find files in a directory
 void findFilesInDirectory(const fs::path& dirPath, vector<string>& fileNames) {
     for (const auto& entry : fs::directory_iterator(dirPath)) {
-        if (entry.is_regular_file() && entry.path().filename().string().find("postings_") != string::npos) {
+        if (entry.is_regular_file() && entry.path().filename().string().find("output_") != string::npos) {
             fileNames.push_back(entry.path().string());
         }
     }
 }
 
 int main() {
-    string directoryPath = "sortedPostingsAlphabetically/";
+    string directoryPath = "sortedPostings/";
     vector<string> inputFileNames;
     vector<string> allFileNames;
 
@@ -127,7 +138,7 @@ int main() {
     findFilesInDirectory(directoryPath, allFileNames);
 
     for (const string& fileName : allFileNames) {
-        if (fileName.find("postings_") != string::npos) {
+        if (fileName.find("output_") != string::npos) {
             inputFileNames.push_back(fileName);
         }
     }
@@ -149,7 +160,7 @@ int main() {
     }
 
     // Create and save the hashtable
-    createAndSaveHashtable(outputFiles[0], filePath);
+    createAndSaveHashtable("mergePostings/"+ outputFiles[0], filePath);
 
     return 0;
 }
