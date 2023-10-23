@@ -5,6 +5,10 @@
 #include <regex>
 #include <sstream>
 #include <string>
+#include <filesystem>
+
+namespace fs = std::__fs::filesystem;
+
 
 // Function to encode an integer using VarByte and return binary representation
 std::string varByteEncode(int number) {
@@ -34,8 +38,15 @@ int main() {
     "postings_w_z.txt"};
     
     for (const std::string& inputFileName : inputFiles) {
-        std::ifstream inputFile("sortedPostings/" + inputFileName);
+        std::ifstream inputFile("sortedPostingsAlphabetically/" + inputFileName);
         std::string outputFileName = inputFileName.substr(0, inputFileName.find_last_of('.')) + ".bin";
+
+        std::string folderName = "compressed";
+       
+        if (!fs::is_directory(folderName)) {
+            fs::create_directory(folderName); // Create the "data" folder if it doesn't exist
+        }   
+
         std::ofstream outputFile("compressed/" + outputFileName, std::ios::out | std::ios::binary); // Open in binary mode
 
         if (!inputFile.is_open() || !outputFile.is_open()) {
@@ -84,8 +95,8 @@ int main() {
         }
 
         inputFile.close();
-        outputFile.close();
-
+        outputFile.close();     
+        
         std::cout << "VarByte encoding completed. Results saved to '" << outputFileName << "'." << std::endl;
     }
 

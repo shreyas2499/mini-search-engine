@@ -7,7 +7,7 @@
 #include <chrono>
 #include <filesystem>
 
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 
 // Define constants for maximum term and URL lengths
 const int MAX_TERM_LENGTH = 256;
@@ -131,7 +131,8 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     int sizeCount = 0;
 
     while (std::getline(txtFile, line)) {
-    
+        // std::cerr << line << std::endl;
+
         if (line.find("<DOC>") != std::string::npos) {
             sizeCount++;
         }
@@ -155,15 +156,17 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
                 urls.push_back(line);
                 docIDToUrlMap[documentID] = line;
             } else {
+                int count = 0;
                 std::istringstream iss(line);
                 std::vector<std::string> words;
                 std::string word;
                 while (iss >> word) {
-                    if(skipWord(word)){
+                    std::string wordShortend = removeCharactersFromBothEnds(word);
+                    if(wordShortend.length() == 0){
                         continue;
                     }
-                    std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-                    addToPostingList(postingLists, removeCharactersFromBothEnds(word), documentID);
+                    std::transform(wordShortend.begin(), wordShortend.end(), wordShortend.begin(), ::tolower);
+                    addToPostingList(postingLists, wordShortend, documentID);
                     termPosition++;
                 }
             }
@@ -172,7 +175,7 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     }
 
 
-    const std::string folderName = "postings";
+    const std::string folderName = "unfilteredPostings";
     if (!fs::is_directory(folderName)) {
         fs::create_directory(folderName); // Create the "data" folder if it doesn't exist
     }
@@ -188,6 +191,12 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     outputDocIDToUrlMapToFile(docIDToUrlMap);
 }
 
+
+int extractNumber(const fs::directory_entry& entry){
+    std::string stem = entry.path().stem().string();
+    return std::stoi(stem.substr(7));
+}
+
 int main() {
     const std::string dataDirectory = "data"; // Set the path to your data folder
     std::map<int, std::string> docIDToUrlMap;
@@ -198,20 +207,24 @@ int main() {
 
     // Populate the entries vector with all files in the directory
     for (const auto& entry : fs::recursive_directory_iterator(dataDirectory)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+        if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
             entries.push_back(entry);
         }
     }
 
     // Sort the entries by filename (you can customize the sorting criteria)
     std::sort(entries.begin(), entries.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
-        return a.path().filename().string() < b.path().filename().string();
+        return extractNumber(a) < extractNumber(b);
     });
 
     
     // Use std::filesystem to recursively iterate over .txt files in the data folder
     for (const auto& entry : entries) {
         // if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
+
+
+            std::cout << "Processsing file: " << entry.path().filename() << std::endl;
+
             // Open the .txt file for processing
             std::ifstream txtFile(entry.path().string());
             

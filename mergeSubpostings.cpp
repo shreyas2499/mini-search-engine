@@ -4,6 +4,7 @@
 #include <string>
 #include <queue>
 #include <filesystem>
+#include <unordered_map>  // Added for the hashtable
 
 namespace fs = std::__fs::filesystem;
 
@@ -22,7 +23,7 @@ bool lineWithIndexCompare(const LineWithIndex& a, const LineWithIndex& b) {
 
 // Function to perform external merge sort
 void externalMergeSort(const vector<string>& inputFileNames, const vector<string>& outputFiles) {
-    string outputFolderPath = "sortedPostingsAlphabetically/";
+    string outputFolderPath = "mergePostings/";
 
     // Create the output folder if it doesn't exist
     if (!fs::exists(outputFolderPath)) {
@@ -50,84 +51,6 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
         char startingLetter = tolower(top.line[0]);
         int outputFileIndex;
 
-        // switch (startingLetter) {
-        //     case 'a': 
-        //         outputFileIndex = 1;
-        //         break;
-        //     case 'b':
-        //         outputFileIndex = 2;
-        //         break;  
-        //     case 'c':
-        //         outputFileIndex = 3;
-        //         break;
-        //     case 'd':
-        //         outputFileIndex = 4;
-        //         break;
-        //     case 'e':
-        //         outputFileIndex = 5;
-        //         break;
-        //     case 'f':
-        //         outputFileIndex = 6;
-        //         break;
-        //     case 'g':
-        //         outputFileIndex = 7;
-        //         break;
-        //     case 'h':
-        //         outputFileIndex = 8;
-        //         break;
-        //     case 'i':
-        //         outputFileIndex = 9;
-        //         break;
-        //     case 'j':
-        //         outputFileIndex = 10;
-        //         break;
-        //     case 'k':
-        //         outputFileIndex = 11;
-        //         break;
-        //     case 'l':
-        //         outputFileIndex = 12;
-        //         break;
-        //     case 'm':
-        //         outputFileIndex = 13;
-        //         break;
-        //     case 'n':
-        //         outputFileIndex = 14;
-        //         break;
-        //     case 'o':
-        //         outputFileIndex = 15;
-        //         break;
-        //     case 'p':
-        //         outputFileIndex = 16;
-        //         break;
-        //     case 'q':
-        //         outputFileIndex = 17;
-        //         break;
-        //     case 'r':
-        //         outputFileIndex = 18;
-        //         break;
-        //     case 's':
-        //         outputFileIndex = 19;
-        //         break;
-        //     case 't':
-        //         outputFileIndex = 20;
-        //         break;
-        //     case 'u':
-        //         outputFileIndex = 21;
-        //         break;
-        //     case 'v':
-        //         outputFileIndex = 22;
-        //         break;
-        //     case 'w':
-        //     case 'x':
-        //     case 'y':
-        //     case 'z':
-        //         outputFileIndex = 23;
-        //         break;
-        //     default:
-        //         outputFileIndex = 0;
-        //         break;
-        // }
-
         string outputFilePath = outputFolderPath + outputFiles[0];
 
         ofstream outputFile(outputFilePath, ios_base::app); // Open in append mode
@@ -147,18 +70,56 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
     }
 }
 
+// Function to create and save the hashtable to a file
+void createAndSaveHashtable(const string& inputFilePath, const string& outputFilePath) {
+    ifstream inputFile(inputFilePath);
+    unordered_map<string, pair<int, int>> hashtable; // word -> {frequency, line number}
+
+    // Read lines from the input file and process them
+    int lineNumber = 1;
+    string line;
+    while (getline(inputFile, line)) {
+        // Parse the line to extract word and data
+        size_t colonPos = line.find(':');
+        if (colonPos != string::npos) {
+            string word = line.substr(0, colonPos);
+            string data = line.substr(colonPos); // Skip ': ' after colon
+
+            // Count the number of tuples (frequency)
+            int frequency = 0;
+            for (char c : data) {
+                if (c == '(') {
+                    frequency++;
+                }
+            }
+
+            // Store word, frequency, and line number in the hashtable
+            hashtable[word] = {frequency, lineNumber};
+        }
+        lineNumber++;
+    }
+
+    inputFile.close();
+
+    // Save the hashtable to the output file
+    ofstream outputFile(outputFilePath);
+    for (const auto& entry : hashtable) {
+        outputFile << entry.first << ", " << entry.second.first << " - " << entry.second.second << endl;
+    }
+    outputFile.close();
+}
+
 // Function to recursively find files in a directory
 void findFilesInDirectory(const fs::path& dirPath, vector<string>& fileNames) {
     for (const auto& entry : fs::directory_iterator(dirPath)) {
         if (entry.is_regular_file() && entry.path().filename().string().find("postings_") != string::npos) {
-            // std::cerr<<entry.path().string()<<std::endl;
             fileNames.push_back(entry.path().string());
         }
     }
 }
 
 int main() {
-    string directoryPath = "unfilteredPostings/";
+    string directoryPath = "sortedPostingsAlphabetically/";
     vector<string> inputFileNames;
     vector<string> allFileNames;
 
@@ -167,7 +128,6 @@ int main() {
 
     for (const string& fileName : allFileNames) {
         if (fileName.find("postings_") != string::npos) {
-            // std::cerr<<fileName<<std::endl;
             inputFileNames.push_back(fileName);
         }
     }
@@ -178,6 +138,18 @@ int main() {
     };
 
     externalMergeSort(inputFileNames, outputFiles);
+
+    string outputFolderPath = "hashtable/";
+    string fileName = "hashtable.txt";
+    string filePath = outputFolderPath + fileName;
+
+    // Create the output folder if it doesn't exist
+    if (!fs::exists(outputFolderPath)) {
+        fs::create_directory(outputFolderPath);
+    }
+
+    // Create and save the hashtable
+    createAndSaveHashtable(outputFiles[0], filePath);
 
     return 0;
 }
