@@ -6,7 +6,6 @@
 #include <filesystem>
 
 namespace fs = std::__fs::filesystem;
-
 using namespace std;
 
 // Structure to hold lines and file index
@@ -129,15 +128,12 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
         }
 
         string outputFilePath = outputFolderPath + outputFiles[outputFileIndex];
-
         ofstream outputFile(outputFilePath, ios_base::app); // Open in append mode
-        // std::cout << "Read to file: " << top.line << std::endl;
         outputFile << top.line << endl;
 
         if (getline(inputFiles[top.fileIndex], top.line)) {
             minHeap.push(top);
         }
-
         outputFile.close();
     }
 
@@ -151,7 +147,6 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
 void findFilesInDirectory(const fs::path& dirPath, vector<string>& fileNames) {
     for (const auto& entry : fs::directory_iterator(dirPath)) {
         if (entry.is_regular_file() && entry.path().filename().string().find("postings_") != string::npos) {
-            // std::cerr<<entry.path().string()<<std::endl;
             fileNames.push_back(entry.path().string());
         }
     }
@@ -164,13 +159,6 @@ int main() {
 
     // Find all text files in the directory and its subdirectories
     findFilesInDirectory(directoryPath, allFileNames);
-
-    for (const string& fileName : allFileNames) {
-        if (fileName.find("postings_") != string::npos) {
-            // std::cerr<<fileName<<std::endl;
-            inputFileNames.push_back(fileName);
-        }
-    }
 
     // Define the output files based on starting letters
     vector<string> outputFiles = {

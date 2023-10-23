@@ -23,14 +23,6 @@ void updateEntries(std::map<std::string, std::vector<std::pair<int, int>>>& data
         std::string word = line.substr(0, pos);
         word = cleanWord(word);
 
-        // for (const auto& entry : data) {
-        //     std::cout << entry.first << ": ";
-        //     for (const auto& pair : entry.second) {
-        //         std::cout << "(" << pair.first << ", " << pair.second << ") ";
-        //     }
-        //     std::cout << std::endl;
-        // }s
-
         if (!word.empty()) { // Check if the word is not empty after cleaning
             std::string rest = line.substr(pos + 1);
 
@@ -63,7 +55,6 @@ int main() {
 
     // Create a map to store the file names for each category
     std::unordered_map<char, std::string> categoryToFileName = {
-        // Update this
         {'_', "postings_misc.txt"},
         {'a', "postings_a.txt"},
         {'b', "postings_b.txt"},

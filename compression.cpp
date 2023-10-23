@@ -9,7 +9,6 @@
 
 namespace fs = std::__fs::filesystem;
 
-
 // Function to encode an integer using VarByte and return binary representation
 std::string varByteEncode(int number) {
     std::vector<unsigned char> encodedBytes;
@@ -22,10 +21,8 @@ std::string varByteEncode(int number) {
             byte |= 0x80;
         }
         encodedBytes.push_back(byte);
-
         number >>= 7;
     }
-
     return std::string(encodedBytes.begin(), encodedBytes.end());
 }
 
@@ -40,7 +37,7 @@ int main() {
         std::string folderName = "compressed";
        
         if (!fs::is_directory(folderName)) {
-            fs::create_directory(folderName); // Create the "data" folder if it doesn't exist
+            fs::create_directory(folderName); // Create the "mergePostings" folder if it doesn't exist
         }   
 
         std::ofstream outputFile("compressed/" + outputFileName, std::ios::out | std::ios::binary); // Open in binary mode

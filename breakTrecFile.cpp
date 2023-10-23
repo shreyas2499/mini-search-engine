@@ -2,9 +2,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <filesystem> // For creating directories
+#include <filesystem>
 
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 
 // Function to write documents to a new text file in the "data" folder
 void writeDocumentsToFile(const std::vector<std::string>& documents, int fileIndex) {
@@ -18,6 +18,7 @@ void writeDocumentsToFile(const std::vector<std::string>& documents, int fileInd
     std::ofstream outputFile(filename);
 
     if (outputFile.is_open()) {
+        // Write each document to the file
         for (const std::string& doc : documents) {
             outputFile << doc << std::endl;
         }
@@ -29,11 +30,12 @@ void writeDocumentsToFile(const std::vector<std::string>& documents, int fileInd
 }
 
 int main() {
-    const std::string trecFilename = "D:\\Notes\\Web Search Engines\\inverted-index\\fulldocs-new.trec";  // Replace with your .trec file
-    const int documentsPerFile = 1500;
-    std::vector<std::string> documents;
-    int documentCount = 0;
-    int fileIndex = 0;
+    // Specify the path to the input .trec file
+    const std::string trecFilename = "/Users/shreyasmac/Documents/VS Code/inverted-index/msmarco-docs.trec";
+    const int documentsPerFile = 1500; // Number of documents to store in each output file
+    std::vector<std::string> documents; // Temporary storage for documents
+    int documentCount = 0; // Count of documents processed
+    int fileIndex = 0; // Index for naming output files
 
     std::ifstream trecFile(trecFilename);
 
@@ -46,19 +48,18 @@ int main() {
     bool isInsideDocument = false;
 
     while (std::getline(trecFile, line)) {
-        // std::cerr << line << std::endl;
         if (line.find("<DOC>") != std::string::npos) {
             isInsideDocument = true;
             documents.push_back(line);
-            // documents.clear(); // Start a new set of documents
         } else if (isInsideDocument) {
-            documents.push_back(line); // Add the line to the current document
+            documents.push_back(line); // Add lines to the current document
         }
 
         if (line.find("</DOC>") != std::string::npos) {
             documentCount++;
 
             if (documentCount >= documentsPerFile) {
+                // Write the documents to a new file and reset the temporary storage
                 writeDocumentsToFile(documents, fileIndex);
                 documents.clear();
                 documentCount = 0;
@@ -68,7 +69,7 @@ int main() {
         }
     }
 
-    // Check if there are any remaining documents
+    // Check if there are any remaining documents and write them to a file
     if (!documents.empty()) {
         writeDocumentsToFile(documents, fileIndex);
     }

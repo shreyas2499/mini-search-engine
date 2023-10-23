@@ -29,7 +29,7 @@ int fileIndex = 0;
 
 // Function to remove specified characters from the beginning and end of a string
 std::string removeCharactersFromBothEnds(const std::string& input) {
-    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"','\'', '[', ']', '/'};
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"', '\'', '[', ']', '/' };
 
     std::string result = input;
 
@@ -52,26 +52,6 @@ std::string removeCharactersFromBothEnds(const std::string& input) {
     return result;
 }
 
-// Function to compress an integer using VarByte and append the result to a vector
-void VarEncodeTermPosition(int termPosition, std::vector<uint8_t>& encodedPositions) {
-    while (termPosition > 127) {
-        encodedPositions.push_back(static_cast<uint8_t>((termPosition & 127) + 128));
-        termPosition = termPosition >> 7;
-    }
-    encodedPositions.push_back(static_cast<uint8_t>(termPosition));
-}
-
-void VarEncode(int number, std::vector<uint8_t>& encoded) {
-    while (number >= 128) {
-        uint8_t encodedValue = static_cast<uint8_t>((number & 127) | 128);
-        encoded.push_back(encodedValue);
-        encoded.push_back(' ');
-        number >>= 7;
-    }
-    uint8_t finalValue = static_cast<uint8_t>(number);
-    encoded.push_back(finalValue);
-}
-
 // Function to add an entry to the posting list
 void addToPostingList(std::map<std::string, PostingList>& postingLists, const std::string& term, int docID) {
     if (postingLists.find(term) == postingLists.end()) {
@@ -83,7 +63,7 @@ void addToPostingList(std::map<std::string, PostingList>& postingLists, const st
     }
 }
 
-// Function to print the posting lists
+// Function to write posting lists to a file
 void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::string, PostingList>& postingLists, std::string fileName) {
     for (const auto& posting : postingLists) {
         outputFile << posting.first << ": ";
@@ -92,19 +72,17 @@ void writePostingListsToFile(std::ofstream& outputFile, const std::map<std::stri
         }
         outputFile << std::endl;
     }
-
     std::cout << "Postings have been written to " << fileName << std::endl;
-
     outputFile.close();
 }
 
+// Function to write document ID to URL mapping to a file
 void outputDocIDToUrlMapToFile(const std::map<int, std::string>& docIDToUrlMap) {
     std::ofstream outputFile("docIDToUrlMapping.txt", std::ios::out | std::ios::trunc);
     if (outputFile.is_open()) {
         for (const auto& entry : docIDToUrlMap) {
             outputFile << entry.first << ": " << entry.second << std::endl;
         }
-
         std::cout << "DocID to URL mapping has been written to " << "docIDToUrlMapping.txt" << std::endl;
     } else {
         std::cerr << "Failed to open the output file: " << "docIDToUrlMapping.txt" << std::endl;
@@ -112,17 +90,17 @@ void outputDocIDToUrlMapToFile(const std::map<int, std::string>& docIDToUrlMap) 
     outputFile.close();
 }
 
+// Function to skip common words based on specific conditions
 bool skipWord(std::string word){
     return word == std::string(".") || word == std::string(",") || word == std::string("?") || word == std::string("!") ||
     word == std::string(":") || word == std::string(";") || word == std::string("-") || word == std::string(" ") ||
     word == std::string(")") || word == std::string("(") || word == std::string("\"") || word == std::string("/");
 }
 
-
 // Function to parse a .txt file and create intermediate posting lists
 void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::vector<std::string>& documents, std::map<int, std::string>& docIDToUrlMap) {
     std::map<std::string, PostingList> postingLists;
-    
+
     std::string line;
     std::string documentContent;
     std::string urlContent;
@@ -131,8 +109,6 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     int sizeCount = 0;
 
     while (std::getline(txtFile, line)) {
-        // std::cerr << line << std::endl;
-
         if (line.find("<DOC>") != std::string::npos) {
             sizeCount++;
         }
@@ -161,23 +137,23 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
                 std::vector<std::string> words;
                 std::string word;
                 while (iss >> word) {
-                    std::string wordShortend = removeCharactersFromBothEnds(word);
-                    if(wordShortend.length() == 0){
+                    std::string wordShortened = removeCharactersFromBothEnds(word);
+                    if (wordShortened.length() == 0) {
                         continue;
                     }
-                    std::transform(wordShortend.begin(), wordShortend.end(), wordShortend.begin(), ::tolower);
-                    addToPostingList(postingLists, wordShortend, documentID);
-                    termPosition++;
+                    std::transform(wordShortened.begin(), wordShortened.end(), wordShortened.begin(), ::tolower);
+                    if (!skipWord(wordShortened)) {
+                        addToPostingList(postingLists, wordShortened, documentID);
+                        termPosition++;
+                    }
                 }
             }
         }
-    
     }
-
 
     const std::string folderName = "unfilteredPostings";
     if (!fs::is_directory(folderName)) {
-        fs::create_directory(folderName); // Create the "data" folder if it doesn't exist
+        fs::create_directory(folderName);
     }
 
     std::string file = "/postings_" + std::to_string(fileIndex) + ".txt";
@@ -185,73 +161,60 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     std::string filename = "postings_" + std::to_string(fileIndex) + ".txt";
 
     std::ofstream outputFile(filepath, std::ios::out | std::ios::trunc);
-    // Output the posting lists and docIDToUrlMap
     writePostingListsToFile(outputFile, postingLists, filename);
     outputFile.close();
     outputDocIDToUrlMapToFile(docIDToUrlMap);
 }
 
-
+// Function to extract the number from a directory entry's filename
 int extractNumber(const fs::directory_entry& entry){
     std::string stem = entry.path().stem().string();
     return std::stoi(stem.substr(7));
 }
 
 int main() {
-    const std::string dataDirectory = "data"; // Set the path to your data folder
+    const std::string dataDirectory = "data";
     std::map<int, std::string> docIDToUrlMap;
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
     std::vector<fs::directory_entry> entries;
 
-    // Populate the entries vector with all files in the directory
     for (const auto& entry : fs::recursive_directory_iterator(dataDirectory)) {
         if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
             entries.push_back(entry);
         }
     }
 
-    // Sort the entries by filename (you can customize the sorting criteria)
     std::sort(entries.begin(), entries.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
         return extractNumber(a) < extractNumber(b);
     });
 
-    
-    // Use std::filesystem to recursively iterate over .txt files in the data folder
     for (const auto& entry : entries) {
-        // if (entry.is_regular_file() && entry.path().extension() == std::string(".txt")) {
+        std::cout << "Processing file: " << entry.path().filename() << std::endl;
+        std::ifstream txtFile(entry.path().string());
 
+        if (!txtFile.is_open()) {
+            std::cerr << "Failed to open the .txt file: " << entry.path() << std::endl;
+            continue;
+        }
 
-            std::cout << "Processsing file: " << entry.path().filename() << std::endl;
+        std::vector<std::string> urls;
+        std::vector<std::string> documents;
 
-            // Open the .txt file for processing
-            std::ifstream txtFile(entry.path().string());
-            
-            if (!txtFile.is_open()) {
-                std::cerr << "Failed to open the .txt file: " << entry.path() << std::endl;
-                continue;
-            }
-
-            std::vector<std::string> urls;
-            std::vector<std::string> documents;
-
-            while (!txtFile.eof()) {
-                parseTxtFile(txtFile, urls, documents, docIDToUrlMap);    
-                urls.clear();
-                documents.clear();
-            }
-            txtFile.close();
-            fileIndex++;
-        // }
+        while (!txtFile.eof()) {
+            parseTxtFile(txtFile, urls, documents, docIDToUrlMap);
+            urls.clear();
+            documents.clear();
+        }
+        txtFile.close();
+        fileIndex++;
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
     std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
-
-    
 
     return 0;
 }

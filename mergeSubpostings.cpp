@@ -54,7 +54,6 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
         string outputFilePath = outputFolderPath + outputFiles[0];
 
         ofstream outputFile(outputFilePath, ios_base::app); // Open in append mode
-        // std::cout << "Read to file: " << top.line << std::endl;
         outputFile << top.line << endl;
 
         if (getline(inputFiles[top.fileIndex], top.line)) {
@@ -74,7 +73,6 @@ void externalMergeSort(const vector<string>& inputFileNames, const vector<string
 void createAndSaveHashtable(const string& inputFilePath, const string& outputFilePath) {
     ifstream inputFile(inputFilePath);
     unordered_map<string, pair<int, int>> hashtable; // word -> {frequency, line number}
-
 
     // Save the sorted hashtable to the output file
     ofstream outputFile(outputFilePath);
@@ -102,7 +100,6 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
         }
         lineNumber++;
     }
-
     inputFile.close();
     
     // Create a vector of pairs for sorting
@@ -114,7 +111,6 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
             return a.first < b.first;
         }
     );
-
 
     for (const auto& entry : sortedHashtable) {
         outputFile << entry.first << ", " << entry.second.first << " - " << entry.second.second << endl;
@@ -139,18 +135,12 @@ int main() {
     // Find all text files in the directory and its subdirectories
     findFilesInDirectory(directoryPath, allFileNames);
 
-    for (const string& fileName : allFileNames) {
-        if (fileName.find("postings_") != string::npos) {
-            inputFileNames.push_back(fileName);
-        }
-    }
-
     // Define the output files based on starting letters
     vector<string> outputFiles = {
         "postings_inverted.txt", // Lines starting with misc characters and numbers
     };
 
-    // externalMergeSort(inputFileNames, outputFiles);
+    externalMergeSort(inputFileNames, outputFiles);
     std::cerr << "Merging Completed" << std::endl; 
 
     string outputFolderPath = "hashtable/";
