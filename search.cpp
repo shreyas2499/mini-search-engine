@@ -103,18 +103,22 @@ std::string conjunctiveSnippet(std::vector<std::string> searchWords, const std::
 
     std::vector<size_t> wordPositions;
     for(const std::string& word: searchWords){
-        wordPositions.push_back(paragraph.find(word));
+        size_t position = paragraph.find(word);
+            
+        if (position != std::string::npos) {
+            wordPositions.push_back(position);
+        }
     }
 
      if (!wordPositions.empty()) {
         // Find the minimum and maximum positions
         size_t startPos = *std::min_element(wordPositions.begin(), wordPositions.end());
         size_t endPos = *std::max_element(wordPositions.begin(), wordPositions.end());
-            
+        size_t zero = 0;
         // Extract the snippet
-        snippet = snippet + paragraph.substr(startPos-10, 150);
+        snippet = snippet + paragraph.substr(std::min(zero,startPos-10), 150);
         snippet = snippet + "....";
-        snippet = snippet + paragraph.substr(endPos-10, 150);
+        snippet = snippet + paragraph.substr(std::min(zero,endPos-10), 150);
     } else {
         std::cout << "Search words not found in the paragraph." << std::endl;
     }
@@ -159,7 +163,7 @@ std::string disjunctiveSnippet(const std::string& keyword, const std::streampos 
 
 //Function to calculate the bm25 score for disjunctive queries
 double bm25Evaluation(double ft, double fdt, double d) {
-    int N = 3200000;
+    int N = 3213836;
     double k = 1.2;
     double b = 0.75;
     double davg = 422;
@@ -172,7 +176,7 @@ double bm25Evaluation(double ft, double fdt, double d) {
 
 //Function to calculate the bm25 score for conjunctive queries
 double bm25EvaluationMulti(std::vector<int> ft, std::vector<int> fdt, double d) {
-    int N = 3200000;
+    int N = 3213836;
     double k = 1.2;
     double b = 0.75;
     double davg = 422;
@@ -433,7 +437,7 @@ int conjunctiveSearch(std::unordered_map<std::string, std::pair<int, std::stream
     int i;
     size_t maxHeapClubbedSize = maxHeapClubbed.size();
     for(i=0; i<maxHeapClubbedSize; i++){
-        if(i==11){
+        if(i==10){
             break;
         }
         WordInfoMulti poppedWord = maxHeapClubbed.top();
@@ -593,6 +597,8 @@ int main(){
         
         std::cin.ignore();
 
+//        The hot glowing surfaces of stars emit energy in the form of electromagnetic radiation.? It is a good approximation to assume that the emissivity e is equal to 1 for these surfaces.Find the radius of the star Rigel, the bright blue star in the constellation Orion Follow numbers together stores inverted frequency
+        
         switch (choice) {
             case 1:{
                 std::cout << "Enter the query." << std::endl;
