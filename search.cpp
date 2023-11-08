@@ -30,6 +30,34 @@ struct WordInfoMulti {
     }
 };
 
+
+// Function to split a string into words based on delimiters
+std::vector<std::string> splitString(const std::string& input) {
+    const std::string delimiters = ".,?!:;()\"'[]/{}() +#-><$%&*|~";
+    std::vector<std::string> tokens;
+    std::string word;
+    std::istringstream iss(input);
+
+    char c;
+    while (iss.get(c)) {
+        if (delimiters.find(c) == std::string::npos) {
+            word += c;
+        } else {
+            if (!word.empty()) {
+                tokens.push_back(word);
+                word.clear();
+            }
+        }
+    }
+
+    if (!word.empty()) {
+        tokens.push_back(word);
+    }
+
+    return tokens;
+}
+
+
 //Function to get the document based on the offset pointer
 std::string getDocument(const std::streampos pointer){
     std::string binFileName = "/Users/shreyasmac/Documents/VS Code/inverted-index/msmarco-docs.trec";
@@ -557,19 +585,30 @@ int main(){
     
     while(true){
         int choice;
-        std::cout << "1. Add a word" << std::endl;
+        std::cout << "1. Add a query" << std::endl;
         std::cout << "2. Perform a disjunctive query" << std::endl;
         std::cout << "3. Perform a conjunctive query" << std::endl;
         std::cout << "4. Exit" << std::endl;
         std::cin >> choice;
+        
+        std::cin.ignore();
 
         switch (choice) {
             case 1:{
-                std::cout << "Enter the word." << std::endl;
-                std::string word;
-                std::cin>>word;
-                std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-                words.push_back(word);
+                std::cout << "Enter the query." << std::endl;
+                std::string sentence;
+                std::vector<std::string> splitSentence;
+                std::getline(std::cin, sentence);
+                if (sentence.empty()) {
+                    std::cout << "Empty line, please enter a word." << std::endl;
+                } else {
+                    std::vector<std::string> splitSentence = splitString(sentence);
+                    for (std::string& word : splitSentence) {
+                        std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+                        words.push_back(word);
+                    }
+                    
+                }
                 break;
             }
             case 2:{
@@ -581,9 +620,11 @@ int main(){
                 }
                 std::cout << "Disjunctive Query." << std::endl;
                 std::unordered_map<std::string, std::pair<int, std::streampos>> pointerMap;
+                std::cout << "Searched words (" << words.size() << ") : ";
                 for (const std::string& word : words) {
                     pointerMap[word].first = pointerToWord[word].first;
                     pointerMap[word].second = pointerToWord[word].second;
+                    std::cout << word << " ";
                 }
                 disjunctiveSearch(pointerMap, documentUrls, words, documentPointer);
                 auto endTime = std::chrono::high_resolution_clock::now();
@@ -602,9 +643,11 @@ int main(){
                 }
                 std::cout << "Conjunctive Query." << std::endl;
                 std::unordered_map<std::string, std::pair<int, std::streampos>> pointerMap;
+                std::cout << "Searched words (" << words.size() << ") : ";
                 for (const std::string& word : words) {
                     pointerMap[word].first = pointerToWord[word].first;
                     pointerMap[word].second = pointerToWord[word].second;
+                    std::cout << word << " ";
                 }
                 conjunctiveSearch(pointerMap, documentUrls, words, documentPointer);
                 auto endTime = std::chrono::high_resolution_clock::now();
@@ -619,7 +662,7 @@ int main(){
                 std::cout << "Exit." << std::endl;
                 return 0;
             default:
-                std::cout << "Invalid choice. Please enter a number between 1 and 3." << std::endl;
+                std::cout << "Invalid choice. Please enter a number between 1 and 4." << std::endl;
                 break;
         }
     }
