@@ -96,7 +96,7 @@ void createAndSaveHashtable(const string& inputFilePath, const string& outputFil
             }
 
             // Store word, frequency, and line number in the hashtable
-            hashtable[word] = {frequency, lineNumber};
+            hashtable[word] = {frequency, inputFile.tellg()};
         }
         lineNumber++;
     }
@@ -140,7 +140,7 @@ int main() {
         "postings_inverted.txt", // Lines starting with misc characters and numbers
     };
 
-    externalMergeSort(inputFileNames, outputFiles);
+    externalMergeSort(allFileNames, outputFiles);
     std::cerr << "Merging Completed" << std::endl; 
 
     string outputFolderPath = "hashtable/";

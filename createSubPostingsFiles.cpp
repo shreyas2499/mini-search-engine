@@ -16,7 +16,7 @@ struct LineWithIndex {
 
 // Custom comparison function for LineWithIndex
 bool lineWithIndexCompare(const LineWithIndex& a, const LineWithIndex& b) {
-    return a.line > b.line; // Change to '<' for min-heap, '>' for max-heap
+    return a.line > b.line;
 }
 
 // Function to perform external merge sort
@@ -189,7 +189,7 @@ int main() {
         
     };
 
-    externalMergeSort(inputFileNames, outputFiles);
+    externalMergeSort(allFileNames, outputFiles);
 
     return 0;
 }

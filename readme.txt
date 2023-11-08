@@ -41,5 +41,18 @@ compression.cpp
     stores these in .bin files in the compressed file
 
 
+search.cpp
+    reads data from wordPositions/postings_inverted_word_positions.txt file to get the pointers to respective word's inverted indexes
+    reads data from docIDToUrlMapping.txt to get the docId and URL docIDToUrlMapping
+    reads data from documentPositions/documentPositions.txt to get the pointers to the start of each document based on the docId
+
+    Takes user input
+    Performs a disjunctive and conjunctive query Execution
+    For any word given, fetches the inverted index position from the first file
+    calculates a bm25 score
+    Uses the second file to get the associcated URL
+    users the third file to get the associcated document to generate the snippet
+    returns the top 10 best urls based on the bm25 scores
+  
 Relevant folders:
-    data -> unfilteredPostings -> sortedPostingsAlphabetically -> sortedPostingsAlphabetically -> mergePostings -> hashtable -> compressed
+    data -> unfilteredPostings, documentPositions -> sortedPostingsAlphabetically -> sortedPostingsAlphabetically -> mergePostings -> hashtable -> compressed, wordPositions

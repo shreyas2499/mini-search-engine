@@ -24,12 +24,12 @@ struct PostingList {
     std::map<int, int> documentFrequencies;
 };
 
-int documentID = -1;
+int documentID = 0;
 int fileIndex = 0;
 
 // Function to remove specified characters from the beginning and end of a string
 std::string removeCharactersFromBothEnds(const std::string& input) {
-    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"', '\'', '[', ']', '/' };
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-',')', '(', '"', '\'', '[', ']', '/' };
 
     std::string result = input;
 
@@ -61,6 +61,32 @@ void addToPostingList(std::map<std::string, PostingList>& postingLists, const st
     } else {
         postingLists[term].documentFrequencies[docID]++;
     }
+}
+
+
+// Function to split a string into words based on delimiters
+std::vector<std::string> splitString(const std::string& input, const std::string& delimiters) {
+    std::vector<std::string> tokens;
+    std::string word;
+    std::istringstream iss(input);
+
+    char c;
+    while (iss.get(c)) {
+        if (delimiters.find(c) == std::string::npos) {
+            word += c;
+        } else {
+            if (!word.empty()) {
+                tokens.push_back(word);
+                word.clear();
+            }
+        }
+    }
+
+    if (!word.empty()) {
+        tokens.push_back(word);
+    }
+
+    return tokens;
 }
 
 // Function to write posting lists to a file
@@ -97,6 +123,19 @@ bool skipWord(std::string word){
     word == std::string(")") || word == std::string("(") || word == std::string("\"") || word == std::string("/");
 }
 
+
+bool replaceNonStandardCharacters(const std::string& input) {
+    bool result;
+    for (char c : input) {
+        if (isprint(c) || isspace(c)) {
+            result = false;
+        } else {
+            return true;
+        }
+    }
+    return result;
+}
+
 // Function to parse a .txt file and create intermediate posting lists
 void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::vector<std::string>& documents, std::map<int, std::string>& docIDToUrlMap) {
     std::map<std::string, PostingList> postingLists;
@@ -108,16 +147,18 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
     bool isInsideTextTag = false;
     int sizeCount = 0;
 
+    const std::string delimiters = ".,?!:;()\"'[]/{}() +#-><$%&*|~";
+
     while (std::getline(txtFile, line)) {
         if (line.find("<DOC>") != std::string::npos) {
             sizeCount++;
+            documentID++;
         }
 
         if (line.find("<TEXT>") != std::string::npos) {
             isInsideTextTag = true;
             urlContent.clear();
             documentContent.clear();
-            documentID++;
             termPosition = 0;
             continue;
         }
@@ -132,11 +173,18 @@ void parseTxtFile(std::ifstream& txtFile, std::vector<std::string>& urls, std::v
                 urls.push_back(line);
                 docIDToUrlMap[documentID] = line;
             } else {
+                std::vector<std::string> words = splitString(line, delimiters);
+
+
                 int count = 0;
                 std::istringstream iss(line);
-                std::vector<std::string> words;
-                std::string word;
-                while (iss >> word) {
+                for (std::vector<std::string>::iterator it = words.begin(); it != words.end(); ++it) {
+                    std::string word = *it;
+
+                    if(replaceNonStandardCharacters(word)){
+                        continue;
+                    }
+
                     std::string wordShortened = removeCharactersFromBothEnds(word);
                     if (wordShortened.length() == 0) {
                         continue;

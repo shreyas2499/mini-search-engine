@@ -7,13 +7,27 @@
 #include <unordered_map>
 
 std::string cleanWord(const std::string& word) {
-    std::string cleanedWord;
-    for (char c : word) {
-        if (isalnum(c)) {
-            cleanedWord += c;
-        }
+    const char charactersToRemove[] = { '.', ',', '?', '!', ':', ';', '-', ' ', ')', '(', '"', '\'', '[', ']', '/' };
+
+    std::string result = word;
+
+    // Remove characters from the beginning
+    size_t firstValidChar = result.find_first_not_of(charactersToRemove);
+    if (firstValidChar != std::string::npos) {
+        result = result.substr(firstValidChar);
+    } else {
+        result.clear();
     }
-    return cleanedWord;
+
+    // Remove characters from the end
+    size_t lastValidChar = result.find_last_not_of(charactersToRemove);
+    if (lastValidChar != std::string::npos) {
+        result.erase(lastValidChar + 1);
+    } else {
+        result.clear();
+    }
+
+    return result;
 }
 
 // Function to update the entries
